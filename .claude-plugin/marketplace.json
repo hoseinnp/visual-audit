@@ -1,0 +1,16 @@
+{
+  "name": "visual-audit",
+  "description": "Full visual QA pass over an app's UI.",
+  "owner": {
+    "name": "hoseinnp",
+    "url": "https://github.com/hoseinnp"
+  },
+  "plugins": [
+    {
+      "name": "visual-audit",
+      "description": "Render every screen and state in both themes, inspect up close, fix visual defects at the root, verify.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

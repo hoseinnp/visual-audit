@@ -12,10 +12,38 @@ The checklist covers default toolkit styling leaking through, icon and text alig
 
 ## Install
 
-The skill is a single `SKILL.md` file in the `visual-audit` folder. Copy that folder into the skills directory of any agent that supports the SKILL.md format, for example:
+### As a plugin (recommended)
 
-- user-wide: `~/.claude/skills/visual-audit/`
-- one project only: `<project>/.claude/skills/visual-audit/`
+Inside a session, run:
+
+```
+/plugin marketplace add hoseinnp/visual-audit
+/plugin install visual-audit@visual-audit
+```
+
+Updates come with `/plugin marketplace update visual-audit`.
+
+### With the install script
+
+Copies `SKILL.md` into your user skills folder (`~/.claude/skills/visual-audit/`).
+
+macOS / Linux:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/hoseinnp/visual-audit/main/install.sh | sh
+```
+
+Windows (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/hoseinnp/visual-audit/main/install.ps1 | iex
+```
+
+Options: `--project` / `-Project` installs into `.claude/skills` of the current folder, `--dir <path>` / `-Dir <path>` into any folder, and `--uninstall` / `-Uninstall` removes it. To pass options, download the script first (`sh install.sh --project`, `.\install.ps1 -Project`).
+
+### By hand
+
+Copy the `skills/visual-audit` folder into `~/.claude/skills/` (all projects) or `<project>/.claude/skills/` (one project).
 
 ## Use
 
@@ -25,7 +53,7 @@ Ask for it in plain words, for example:
 
 > Do a visual QA pass on the settings pages, both themes.
 
-Or call it by name with `/visual-audit`.
+Or call it by name with `/visual-audit` (as a plugin: `/visual-audit:visual-audit`).
 
 ## License
 

@@ -1,0 +1,11 @@
+{
+  "name": "visual-audit",
+  "version": "1.0.0",
+  "description": "Full visual QA pass over an app's UI: render every screen, dialog, popup and control in every state and theme, inspect up close, fix at the root, verify.",
+  "author": {
+    "name": "hoseinnp",
+    "url": "https://github.com/hoseinnp"
+  },
+  "repository": "https://github.com/hoseinnp/visual-audit",
+  "license": "MIT"
+}
