@@ -18,6 +18,14 @@ Find the cheapest way to get a picture of any screen in any state. In order of p
 
 Always render with **throwaway data**: copy fixtures or a test database into a scratch folder. Never point the audit at the user's real data. Restore any setting you flip (theme, locale, feature flags) when you finish.
 
+**Keep captures from touching the user's screen or data.** A capture that never exits can leave windows or message boxes on the user's desktop, and the next run can trip over it:
+
+- Give every capture its own fresh copy of the data folder. Apps with a single-instance lock or a lock file in the data folder show "already running" dialogs when two runs share one.
+- Exit hard right after saving the image (`os._exit`, `process.exit`, `app.exit`), and add a watchdog timer that kills the run after a fixed time no matter what. Flush any output you need before the hard exit.
+- Do not trust `timeout` alone: on Windows it often kills only a launcher (such as the `python.exe` shim) while the real process keeps running.
+- If you must stop stuck runs, find them by their exact command line (your harness script) and stop only those. Never kill every process of a common name.
+- Stopping a background job may leave its loop running. Check that the loop process itself is gone, not only the job.
+
 If every capture comes back blank or identical, check the environment before the code: a locked screen, a minimized window, an animation or fade that has not run yet, or a missing login. Compare against the previous commit to tell an environment problem from a regression.
 
 ## 2. Build the inventory
@@ -37,6 +45,8 @@ A gallery page that puts every control in every state on one screen is the faste
 - Small things (icons, borders, focus rings, shadows inside circles) need **2x or larger**: raise the device scale factor, or crop and enlarge the region. Most real defects are only a few pixels wide.
 - Open each popup, menu and dropdown while capturing. A closed dropdown hides its list's styling.
 - Wait out enter animations before grabbing, or turn them off for the capture.
+- Open popups through the same signals a user triggers: emit the click or "text edited" signal, or call the open function. Setting a field's text from code usually does not fire the user-edit signal, so a search popup or validation never appears.
+- Do not edit the code while the "before" captures are still running. Later captures would already include the fixes. Note the defects, wait for the run to finish, then fix.
 
 ## 4. Inspect against the checklist
 
@@ -52,13 +62,19 @@ Look at every capture. For each item, ask whether it holds everywhere, not only 
 - Icon-only buttons truly centered, with no reserved empty text space.
 - Dialog close buttons inset like the title, vertically centered on the title, not jammed into the corner.
 - Text fields with the same alignment as the page direction. Values that start with digits (dates, amounts, codes) are a common trap: auto-detected direction flips them to the wrong side.
+- The same trap in plain labels and list rows: a line that is only digits (a phone number under a name, a date, a count) sits on the wrong side unless its alignment is set explicitly.
 - Labels, fields and hints in a form sharing one edge.
 
 **Shape and radius**
 - Circles stay circles. Inner shadows or gradients built from straight horizontal and vertical bands draw a visible square inside a round shape.
 - Pills (fully rounded ends): straight left/right bands leave hard strips inside the round caps.
 - Nested corners: the inner radius equals the outer radius minus the gap between them.
+- Bands inside a rounded container (a table header, a total row, a card header or footer): round only the corners that touch the container's edge. A header with all four corners rounded leaves small notches at its bottom ends, where its divider line runs straight to the edge.
 - One radius scale across similar components.
+
+**Spacing**
+- Space reserved for something that appears only on hover or while dragging (a slider's value bubble, a tooltip, a validation message) leaves a permanent empty gap. Let the transient element float over its neighbors instead.
+- Even gaps between a label, its control and its hint across every form.
 
 **Shadow and depth**
 - Raised against inset used consistently: fields and tracks pressed in, cards and buttons raised.
@@ -85,9 +101,12 @@ Look at every capture. For each item, ask whether it holds everywhere, not only 
 - Directional icons (arrows, chevrons, back) mirrored. Non-directional icons (search, check) not mirrored.
 - A popup wider than its anchor opens toward the inside of the page.
 - Switch knobs, sliders and progress fill moving in the reading direction.
+- Dialogs and popups drawn on a separate overlay layer may not inherit the page's RTL setting. Persian or Arabic text still looks right because it aligns itself, so the only symptom is numeric fields and digit-only labels sitting on the left. Check numbers inside every dialog, and set the direction on the dialog itself if needed.
 
 **Consistency**
 - Sibling components that do the same job look the same: every popup, every menu, every badge, every empty state.
+- Cards in one row share a height. A row where one card has a second line and the others do not looks ragged; give them all the same lines or stretch them to the tallest.
+- Popups and menus keep the same gap from what opened them.
 
 ## 5. Fix at the root
 
