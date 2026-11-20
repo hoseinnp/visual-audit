@@ -25,8 +25,12 @@ Always render with **throwaway data**: copy fixtures or a test database into a s
 - Do not trust `timeout` alone: on Windows it often kills only a launcher (such as the `python.exe` shim) while the real process keeps running.
 - If you must stop stuck runs, find them by their exact command line (your harness script) and stop only those. Never kill every process of a common name.
 - Stopping a background job may leave its loop running. Check that the loop process itself is gone, not only the job.
+- Captures must not write to the user's real app settings either. Apps that remember the last page, recent items or window size keep them in the registry or a per-user settings file, so test runs can leak test names into the user's app. Point the settings store at the capture's own folder (in Qt: `QSettings.setDefaultFormat(IniFormat)` plus `setPath`). If a smoke run of the built app has no such switch, put back the values it changed afterwards.
 
 If every capture comes back blank or identical, check the environment before the code: a locked screen, a minimized window, an animation or fade that has not run yet, or a missing login. Compare against the previous commit to tell an environment problem from a regression.
+
+- A display that is asleep (user away, monitor off) gives the same symptom without a lock screen. The window is not shown, so frames stop, and animations and timers driven by frames freeze: pages stay at the first, transparent frame of a fade, and data that loads on a timer never arrives. Run one capture that worked earlier with the same harness to confirm it. In Qt, `QSG_RENDER_LOOP=basic` keeps rendering.
+- Resizing the window from code while it is not on screen can hang or return an empty image. Set the size before startup instead: the app's saved window size, a launch flag, or the toolkit's default size.
 
 ## 2. Build the inventory
 
@@ -47,6 +51,9 @@ A gallery page that puts every control in every state on one screen is the faste
 - Wait out enter animations before grabbing, or turn them off for the capture.
 - Open popups through the same signals a user triggers: emit the click or "text edited" signal, or call the open function. Setting a field's text from code usually does not fire the user-edit signal, so a search popup or validation never appears.
 - Do not edit the code while the "before" captures are still running. Later captures would already include the fixes. Note the defects, wait for the run to finish, then fix.
+- Capture each changed page at several window widths, not only the default: the minimum width, the default, and widths just below and above every breakpoint where columns change.
+- A capture that hangs or never saves its image is a finding, not noise. Find what triggers it (which page, which width), then hide parts of the page one at a time from the harness until it stops. That names the component.
+- When comparing with an older commit to see where a problem started, check that the older code runs in the same state. If the trigger is a setting the newer code added (a remembered window size, a feature flag), the older commit ignores it and the comparison proves nothing. Reproduce the state another way, such as resizing from the harness.
 
 ## 4. Inspect against the checklist
 
@@ -63,6 +70,8 @@ Look at every capture. For each item, ask whether it holds everywhere, not only 
 - Dialog close buttons inset like the title, vertically centered on the title, not jammed into the corner.
 - Text fields with the same alignment as the page direction. Values that start with digits (dates, amounts, codes) are a common trap: auto-detected direction flips them to the wrong side.
 - The same trap in plain labels and list rows: a line that is only digits (a phone number under a name, a date, a count) sits on the wrong side unless its alignment is set explicitly.
+- Two numbers in one cell or label ("date · amount") swap places for the same reason. Put them in separate columns or labels.
+- Percent and other signs next to localized digits (Persian or Arabic digits with %) can land on the wrong side of the number. Check them up close, or write the word ("درصد") instead of the sign.
 - Labels, fields and hints in a form sharing one edge.
 
 **Shape and radius**
@@ -75,6 +84,10 @@ Look at every capture. For each item, ask whether it holds everywhere, not only 
 **Spacing**
 - Space reserved for something that appears only on hover or while dragging (a slider's value bubble, a tooltip, a validation message) leaves a permanent empty gap. Let the transient element float over its neighbors instead.
 - Even gaps between a label, its control and its hint across every form.
+- Sizes copied from a sibling can loop. A row that takes its card width from a grid above, while that grid picks its column count from the page width, can widen the page, flip the grid's columns, change the width again and never settle: the page flickers or the app hangs, only at certain window widths. Share the column structure instead of copying a computed width (one grid, or the same column count with fill-width cells and empty filler cells).
+
+**Motion**
+- An animation that carries an element to its real state (bar heights in a chart, a panel's final size or position) leaves it wrong whenever the animation stalls or is skipped. Animate decoration only, or make sure the end state is set even if the animation never runs. Check every animated element with animations off (a "reduced effects" mode, if the app has one).
 
 **Shadow and depth**
 - Raised against inset used consistently: fields and tracks pressed in, cards and buttons raised.
@@ -107,6 +120,7 @@ Look at every capture. For each item, ask whether it holds everywhere, not only 
 - Sibling components that do the same job look the same: every popup, every menu, every badge, every empty state.
 - Cards in one row share a height. A row where one card has a second line and the others do not looks ragged; give them all the same lines or stretch them to the tallest.
 - Popups and menus keep the same gap from what opened them.
+- Confirmation dialogs match what they confirm. A normal action (send reminders, export, sync) in the delete dialog's red warning style reads as dangerous. Keep the red style for delete, cancel and other destructive actions.
 
 ## 5. Fix at the root
 
