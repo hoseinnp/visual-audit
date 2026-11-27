@@ -26,6 +26,7 @@ Always render with **throwaway data**: copy fixtures or a test database into a s
 - If you must stop stuck runs, find them by their exact command line (your harness script) and stop only those. Never kill every process of a common name.
 - Stopping a background job may leave its loop running. Check that the loop process itself is gone, not only the job.
 - Captures must not write to the user's real app settings either. Apps that remember the last page, recent items or window size keep them in the registry or a per-user settings file, so test runs can leak test names into the user's app. Point the settings store at the capture's own folder (in Qt: `QSettings.setDefaultFormat(IniFormat)` plus `setPath`). If a smoke run of the built app has no such switch, put back the values it changed afterwards.
+- If a licence check, login or feature gate blocks rendering, use the app's dev or test bypass, or add one inside the harness. Do not weaken the gate in the app itself.
 
 If every capture comes back blank or identical, check the environment before the code: a locked screen, a minimized window, an animation or fade that has not run yet, or a missing login. Compare against the previous commit to tell an environment problem from a regression.
 
@@ -40,6 +41,9 @@ List what has to be looked at before capturing anything:
 - **Shared controls**: buttons (each kind and size, icon-only), text fields, text areas, selects, checkboxes, radios, switches, sliders, progress bars, tabs, badges, avatars, pagers, steppers, toasts.
 - **States per control**: default, hover, focus, pressed, disabled, selected or checked, error, open (for anything that pops up), busy.
 - **Axes**: light and dark theme, LTR and RTL if the app supports it, narrow and wide window or viewport, any "reduced effects" or low-power mode.
+  - **Text size**: the app's largest text-size setting, or OS font scaling or browser zoom, besides the default.
+  - **Window height**: a short window, not only a narrow one. The smallest common laptop screen (such as 1366x768) is the usual case: the window and every dialog must fit with nothing cut off at the bottom.
+- **Extreme content**: the dialog with the most buttons or actions, the longest name or label, the largest number or amount, zero rows and very many rows.
 
 A gallery page that puts every control in every state on one screen is the fastest way to cover controls. Build one in the scratch folder if the project has none.
 
@@ -120,6 +124,8 @@ Look at every capture. For each item, ask whether it holds everywhere, not only 
 - Sibling components that do the same job look the same: every popup, every menu, every badge, every empty state.
 - Cards in one row share a height. A row where one card has a second line and the others do not looks ragged; give them all the same lines or stretch them to the tallest.
 - Popups and menus keep the same gap from what opened them.
+- Nothing left over from a sibling view: after switching tabs or views, no header, filter, toolbar or summary that belongs to the previous one is still on screen.
+- Buttons, labels and values not clipped or overlapping when a dialog has its most actions or a field its longest value; the layout grows or wraps instead.
 - Confirmation dialogs match what they confirm. A normal action (send reminders, export, sync) in the delete dialog's red warning style reads as dangerous. Keep the red style for delete, cancel and other destructive actions.
 
 ## 5. Fix at the root
